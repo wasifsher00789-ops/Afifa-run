@@ -23,6 +23,17 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Make fixed key if missing
+        run: |
+          if [ ! -f debug.keystore ]; then
+            keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            git config user.name "github-actions"
+            git config user.email "actions@github.com"
+            git add debug.keystore
+            git commit -m "Add fixed signing key"
+            git push
+          fi
+
       - name: Create Capacitor project
         run: |
           mkdir www
@@ -49,7 +60,6 @@ jobs:
 
       - name: Use fixed key and bigger version number
         run: |
-          test -f debug.keystore || { echo "Pehle Make Key workflow chalayen"; exit 1; }
           mkdir -p ~/.android
           cp debug.keystore ~/.android/debug.keystore
           sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/" android/app/build.gradle
